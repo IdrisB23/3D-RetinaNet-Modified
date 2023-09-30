@@ -1,3 +1,8 @@
+subset_vid_names_to_process = [
+    "2014-06-25-16-45-34_stereo_centre_02", 
+    "2014-06-26-09-53-12_stereo_centre_02",
+    "2014-07-14-14-49-50_stereo_centre_01",
+    ]
 
 """
 
@@ -8,7 +13,7 @@ coordinates are in range of [0, 1] normlised height and width
 
 import json, os
 import torch
-import pdb, time
+import pdb
 import torch.utils as tutils
 import pickle
 from .transforms import get_clip_list_resized
@@ -16,7 +21,7 @@ import torch.nn.functional as F
 import numpy as np
 from PIL import ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES =   True
-from PIL import Image, ImageDraw
+from PIL import Image
 from modules.tube_helper import make_gt_tube
 import random as random
 from modules import utils 
@@ -375,7 +380,7 @@ class VideoDataset(tutils.data.Dataset):
         # self.input_type = input_type
         self.input_type = input_type+'-images'
         self.train = train
-        self.root = args.DATA_ROOT + args.DATASET + '/'
+        self.root = os.path.join(args.DATA_ROOT, args.DATASET)
         self._imgpath = os.path.join(self.root, self.input_type)
         self.anno_root = self.root
         if len(args.ANNO_ROOT)>1:
@@ -464,7 +469,7 @@ class VideoDataset(tutils.data.Dataset):
         ptrstr = '\n'
         self.frame_level_list = frame_level_list
         self.all_classes = [['action_ness'], class_names.copy()]
-        for k, name in enumerate(self.label_types):
+        for k, _ in enumerate(self.label_types):
             if len(self.all_classes[k])>0:
                 labels = self.all_classes[k]
                 # self.num_classes_list.append(len(labels))
@@ -499,7 +504,6 @@ class VideoDataset(tutils.data.Dataset):
         
         counts = np.zeros((24, 2), dtype=np.int32)
     
-        ratios = [1.0, 1.1, 1.1, 0.9, 1.1, 0.8, 0.7, 0.8, 1.1, 1.4, 1.0, 0.8, 0.7, 1.2, 1.0, 0.8, 0.7, 1.2, 1.2, 1.0, 0.9]
     
         self.video_list = []
         self.numf_list = []
@@ -518,7 +522,6 @@ class VideoDataset(tutils.data.Dataset):
             elif 'test' in self.SUBSETS and videoname in self.trainvideos:
                 continue
             # print(database[videoname].keys())
-            action_id = database[videoname]['label']
             annotations = database[videoname]['annotations']
             
             numf = database[videoname]['numf']
@@ -560,7 +563,7 @@ class VideoDataset(tutils.data.Dataset):
         ptrstr = '\n'
         self.frame_level_list = frame_level_list
         self.all_classes = [['action_ness'], ucf_classes.copy()]
-        for k, name in enumerate(self.label_types):
+        for k, _ in enumerate(self.label_types):
             labels = self.all_classes[k]
             # self.num_classes_list.append(len(labels))
             for c, cls_ in enumerate(labels): # just to see the distribution of train and test sets
@@ -604,7 +607,8 @@ class VideoDataset(tutils.data.Dataset):
         self.numf_list = []
         frame_level_list = []
 
-        for videoname in sorted(database.keys()):
+        #for videoname in sorted(database.keys()):
+        for videoname in sorted(subset_vid_names_to_process):
             if not is_part_of_subsets(final_annots['db'][videoname]['split_ids'], self.SUBSETS):
                 continue
             
@@ -636,13 +640,13 @@ class VideoDataset(tutils.data.Dataset):
                         width, height = frame['width'], frame['height']
                         anno = frame_annos[key]
                         box = anno['box']
-                        
+
                         assert box[0]<box[2] and box[1]<box[3], box
                         assert width==1280 and height==960, (width, height, box)
 
                         for bi in range(4):
-                            assert 0<=box[bi]<=1.01, box
-                            box[bi] = min(1.0, max(0, box[bi]))
+                            assert 0<=box[bi]<=1.01, box # some box coordinates may exceed 1.0 by a small margin
+                            box[bi] = min(1.0, max(0, box[bi])) # ceil it back with 1.0
                         
                         all_boxes.append(box)
                         box_labels = np.zeros(self.num_classes)
@@ -653,7 +657,7 @@ class VideoDataset(tutils.data.Dataset):
                             list_box_labels.append(filtered_ids)
                             for fid in filtered_ids:
                                 box_labels[fid+cc] = 1
-                                box_labels[0] = 1
+                                box_labels[0] = 1 # placeholder, for the presence of a label
                             cc += self.num_classes_list[idx+1]
 
                         all_labels.append(box_labels)
@@ -721,15 +725,16 @@ class VideoDataset(tutils.data.Dataset):
         all_boxes = []
         labels = []
         ego_labels = []
-        mask = np.zeros(self.SEQ_LEN, dtype=np.int)
+        mask = np.zeros(self.SEQ_LEN, dtype=np.int32)
         indexs = []
         for i in range(self.SEQ_LEN):
             indexs.append(frame_num)
             if self.DATASET != 'ava':
-                img_name = self._imgpath + '/{:s}/{:05d}.jpg'.format(videoname, frame_num)
-                img_name = self._imgpath + '/{:s}/img_{:05d}.jpg'.format(videoname, frame_num)
+                img_name = os.path.join(self._imgpath, videoname)
+                img_name = os.path.join(img_name, "{:05d}.jpg".format(frame_num))
             elif self.DATASET == 'ava':
-                img_name = self._imgpath + '/{:s}/{:s}_{:06d}.jpg'.format(videoname, videoname, frame_num)
+                img_name = os.path.join(self._imgpath, videoname)
+                img_name = os.path.join(img_name, "{:s}_{:06d}.jpg".format(videoname, frame_num))
 
             img = Image.open(img_name).convert('RGB')
             images.append(img)
@@ -792,7 +797,7 @@ def custum_collate(batch):
             temp_counts.append(bs.shape[0])
         assert seq_len == len(temp_counts)
         counts.append(temp_counts)
-    counts = np.asarray(counts, dtype=np.int)
+    counts = np.asarray(counts, dtype=np.int32)
     new_boxes = torch.zeros(len(boxes), seq_len, max_len, 4)
     new_targets = torch.zeros([len(boxes), seq_len, max_len, num_classes])
     for c1, bs_ in enumerate(boxes):

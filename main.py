@@ -1,5 +1,3 @@
-
-import os
 import sys
 import torch
 import argparse
@@ -26,6 +24,8 @@ def main():
     parser.add_argument('--ANNO_ROOT', default='', help='Location to directory where annotations are stored') # /mnt/mars-fast/datasets/
     parser.add_argument('--MODE', default='train',
                         help='MODE can be train, gen_dets, eval_frames, eval_tubes define SUBSETS accordingly, build tubes')
+    parser.add_argument('--BACKBONE_TYPE', default="vit", 
+                        type=str, help="type of the model's backbone [cnn, vit]")
     # Name of backbone network, e.g. resnet18, resnet34, resnet50, resnet101 resnet152 are supported
     parser.add_argument('--ARCH', default='resnet50', 
                         type=str, help=' base arch')
@@ -167,7 +167,7 @@ def main():
     # Program arguments
     parser.add_argument('--MAN_SEED', default=123, 
                         type=int, help='manualseed for reproduction')
-    parser.add_argument('--MULTI_GPUS', default=True, type=str2bool, help='If  more than 0 then use all visible GPUs by default only one GPU used ') 
+    parser.add_argument('--MULTI_GPUS', default=False, type=str2bool, help='If  more than 0 then use all visible GPUs by default only one GPU used ') 
 
     # Use CUDA_VISIBLE_DEVICES=0,1,4,6 to select GPUs to use
 

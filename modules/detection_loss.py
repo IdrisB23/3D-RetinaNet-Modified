@@ -9,6 +9,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch, pdb, time
 from modules import box_utils
+import modules.utils as utils
+
+logger = utils.get_logger(__name__)
 
 
 # Credits:: from https://github.com/facebookresearch/maskrcnn-benchmark/blob/master/maskrcnn_benchmark/layers/smooth_l1_loss.py

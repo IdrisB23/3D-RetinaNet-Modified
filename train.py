@@ -21,7 +21,7 @@ def train(args, net, train_dataset, val_dataset):
     if args.TENSORBOARD:
         from tensorboardX import SummaryWriter
 
-    source_dir = args.SAVE_ROOT+'/source/' # where to save the source
+    source_dir = os.path.join(args.SAVE_ROOT, 'source') # where to save the source
     utils.copy_source(source_dir)
 
     args.START_EPOCH = 1
@@ -41,7 +41,6 @@ def train(args, net, train_dataset, val_dataset):
         log_dir = '{:s}/tboard-{}-{date:%m-%d-%Hx}'.format(args.log_dir, args.MODE, date=datetime.datetime.now())
         args.sw = SummaryWriter(log_dir)
 
-    logger.info(str(net))
     logger.info(solver_print_str)
 
 

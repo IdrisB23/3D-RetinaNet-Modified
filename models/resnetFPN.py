@@ -27,6 +27,20 @@ def conv1x1(in_channel, out_channel):
     return nn.Conv3d(in_channel, out_channel, kernel_size=1, stride=1, padding=0, bias=False)
 
 
+def _upsample(x, y):
+        _, _, t, h, w = y.size()
+        # print('spatial', x.shape, y.shape)
+        x_upsampled = F.interpolate(x, [t, h, w], mode='nearest')
+
+        return x_upsampled
+
+def _upsample_time(x):
+    _,_,t, h, w = x.size()
+    # print('time', x.shape)
+    x_upsampled = F.interpolate(x, [t*2, h, w], mode='nearest')
+    return x_upsampled
+
+
 class ResNetFPN(nn.Module):
 
     def __init__(self, block, args):
@@ -119,19 +133,6 @@ class ResNetFPN(nn.Module):
                 m.bias.data.zero_()
 
 
-    def _upsample(self, x, y):
-        _, _, t, h, w = y.size()
-        # print('spatial', x.shape, y.shape)
-        x_upsampled = F.interpolate(x, [t, h, w], mode='nearest')
-
-        return x_upsampled
-
-    def _upsample_time(self, x):
-        _,_,t, h, w = x.size()
-        # print('time', x.shape)
-        x_upsampled = F.interpolate(x, [t*2, h, w], mode='nearest')
-        return x_upsampled
-
     def _make_layer(self, block, planes, num_blocks, stride=1, temp_kernals=[], nl_inds=[]):
         downsample = None
         if stride != 1 or self.inplanes != planes * block.expansion:
@@ -179,11 +180,11 @@ class ResNetFPN(nn.Module):
             c4 = ff[1]
             c5 = ff[2]
             p5 = self.lateral_layer1(c5)
-            p5_upsampled = self._upsample(p5, c4)
+            p5_upsampled = _upsample(p5, c4)
             p5 = self.corr_layer1(p5)
             p4 = self.lateral_layer2(c4)
             p4 = p5_upsampled + p4
-            p4_upsampled = self._upsample(p4, c3)
+            p4_upsampled = _upsample(p4, c3)
             p4 = self.corr_layer2(p4)
             p3 = self.lateral_layer3(c3)
             p3 = p4_upsampled + p3
@@ -194,8 +195,8 @@ class ResNetFPN(nn.Module):
             ego_feat = self.avg_pool(p7)
             # if self.pool2 is not None:
             #     # for i in range(len(features)):
-            #     #     features[i] = self._upsample_time(features[i])
-            #     ego_feat = self._upsample_time(ego_feat)
+            #     #     features[i] = _upsample_time(features[i])
+            #     ego_feat = _upsample_time(ego_feat)
         else:
             x = self.conv1(x)
             x = self.bn1(x)
@@ -208,11 +209,11 @@ class ResNetFPN(nn.Module):
             c4 = self.layer3(c3)
             c5 = self.layer4(c4)
             p5 = self.lateral_layer1(c5)
-            p5_upsampled = self._upsample(p5, c4)
+            p5_upsampled = _upsample(p5, c4)
             p5 = self.corr_layer1(p5)
             p4 = self.lateral_layer2(c4)
             p4 = p5_upsampled + p4
-            p4_upsampled = self._upsample(p4, c3)
+            p4_upsampled = _upsample(p4, c3)
             p4 = self.corr_layer2(p4)
             p3 = self.lateral_layer3(c3)
             p3 = p4_upsampled + p3
@@ -223,8 +224,8 @@ class ResNetFPN(nn.Module):
             ego_feat = self.avg_pool(p7)
             if self.pool2 is not None:
                 for i in range(len(features)):
-                    features[i] = self._upsample_time(features[i])
-                ego_feat = self._upsample_time(ego_feat)
+                    features[i] = _upsample_time(features[i])
+                ego_feat = _upsample_time(ego_feat)
         return features, ego_feat
 
 
@@ -271,7 +272,7 @@ class ResNetFPN(nn.Module):
 
                                        
     def load_my_state_dict(self, state_dict):
-        logger.info('**LOAD STAE DICTIONARY FOR WEIGHT INITLISATIONS**')
+        logger.info('**LOAD STATE DICTIONARY FOR WEIGHT INITLISATIONS**')
         own_state = self.state_dict()
         update_name_dict = {}
         for b in range(len(self.non_local_inds)):

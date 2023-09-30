@@ -38,8 +38,8 @@ def setup_logger(args):
     """
     Sets up the logging.
     """
-    log_file_name = '{:s}/{:s}-{date:%m-%d-%Hx}.log'.format(args.SAVE_ROOT, args.MODE, date=datetime.datetime.now())
-    args.log_dir = 'logs/'+args.exp_name+'/'
+    log_file_name = os.path.join(args.SAVE_ROOT, '{:s}-{date:%m-%d-%Hx}.log'.format(args.MODE, date=datetime.datetime.now()))
+    args.log_dir = os.path.join('logs', args.exp_name)
     if not os.path.isdir(args.log_dir):
         os.makedirs(args.log_dir)
         
@@ -68,12 +68,19 @@ def get_logger(name):
 
 def copy_source(source_dir):
     if not os.path.isdir(source_dir):
-        os.system('mkdir -p ' + source_dir)
+        os.mkdir(source_dir)
     
     for dirpath, dirs, files in os.walk('./', topdown=True):
         for file in files:
             if file.endswith('.py'): #fnmatch.filter(files, filepattern):
-                shutil.copy2(os.path.join(dirpath, file), source_dir)
+                src_file_p = os.path.join(dirpath, file)
+                dst_file_p = os.path.join(source_dir, file)
+                if os.path.exists(dst_file_p):
+                    if os.path.samefile(src_file_p, dst_file_p): # if same file skip it
+                        continue
+                    # otherwise delete it and copy it from source (overwrite)
+                    os.remove(dst_file_p)
+                shutil.copy2(src_file_p, dst_file_p)
 
 
 def set_args(args):
@@ -145,8 +152,9 @@ def create_exp_name(args):
         args.REG_HEAD_TIME_SIZE,
         )
 
-    args.SAVE_ROOT += args.DATASET+'/'
-    args.SAVE_ROOT = args.SAVE_ROOT+'cache/'+args.exp_name+'/'
+    args.SAVE_ROOT = os.path.join(args.SAVE_ROOT, args.DATASET)
+    args.SAVE_ROOT = os.path.join(args.SAVE_ROOT, 'cache')
+    args.SAVE_ROOT = os.path.join(args.SAVE_ROOT, args.exp_name)
     if not os.path.isdir(args.SAVE_ROOT):
         print('Create: ', args.SAVE_ROOT)
         os.makedirs(args.SAVE_ROOT)

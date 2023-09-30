@@ -1,6 +1,6 @@
 from .resnetFPN import resnetfpn
+from .ViTFPN import vitfpn
 import torch
-import pdb
 
 def backbone_models(args):
 
@@ -18,20 +18,27 @@ def backbone_models(args):
         args.non_local_inds = [[], [], [], []]
 
     base_arch, MODEL_TYPE = args.ARCH, args.MODEL_TYPE
-    perms = modelperms[base_arch]
 
     args.model_perms = modelperms[base_arch]
     args.model_3d_layers = model_3d_layers[base_arch]
 
-    model = resnetfpn(args)
+    if args.BACKBONE_TYPE.lower().startswith("cnn"):
+        model = resnetfpn(args)
+    elif args.BACKBONE_TYPE.lower().startswith("vit"):
+        model = vitfpn(args)
+    else:
+        raise RuntimeError("Define the argument --BACKBONE_TYPE correclty:: " + args.BACKBONE_TYPE)
 
     if args.MODE == 'train':
-        if MODEL_TYPE.startswith('RCN'):
-            model.identity_state_dict()
-        if MODEL_TYPE.startswith('RCGRU') or MODEL_TYPE.startswith('RCLSTM'):
-            model.recurrent_conv_zero_state()
-        if not MODEL_TYPE.startswith('SlowFast'):
-            load_dict = torch.load(args.MODEL_PATH)
-            model.load_my_state_dict(load_dict)
+        if args.BACKBONE_TYPE.lower().startswith("vit"):
+            model.init_weights()
+        else:
+            if MODEL_TYPE.startswith('RCN'):
+                model.identity_state_dict()
+            if MODEL_TYPE.startswith('RCGRU') or MODEL_TYPE.startswith('RCLSTM'):
+                model.recurrent_conv_zero_state()
+            if not MODEL_TYPE.startswith('SlowFast'):
+                load_dict = torch.load(args.MODEL_PATH)
+                model.load_my_state_dict(load_dict)
 
     return model

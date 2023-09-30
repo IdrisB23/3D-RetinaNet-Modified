@@ -24,3 +24,7 @@ extras/annots_12fps_full_v1.0.json
 experiments/
 sub.sh
 lsf.*
+datasets
+model_checkpts
+kinetics-pt
+*.png
