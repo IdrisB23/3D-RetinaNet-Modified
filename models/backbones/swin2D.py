@@ -1,7 +1,7 @@
 from mmdet.models.backbones import SwinTransformer
+import torch
 from torch import Tensor
 from pathlib import Path
-from PIL import Image
 import torchvision.transforms as transforms
 import math
 import matplotlib.pyplot as plt
@@ -40,10 +40,8 @@ def plot_images_in_grid_and_save_to_dir(image: Tensor, dir: Path= Path("feature_
     plt.savefig(dir / f'{n_channels}_feature_maps.png')
 
 def main():
-    backbons_DIR = Path("models") / "backbones"
-    swin_small_pretrained_p_ = backbons_DIR / "pretrained_models" / "swin_small_patch4_window7_224.pth"
-    example_image_p_ = backbons_DIR / "dogs_1280p_0.jpg"
-
+    pretrained_DIR = Path("pre-trained")
+    swin_small_pretrained_p_ = pretrained_DIR / "swin_small_patch4_window7_224.pth"
     swin_transformer_init_config = dict(_delete_=True,
             type='SwinTransformer',
             embed_dims=96,
@@ -66,7 +64,7 @@ def main():
         #depths=(2, 2, 18, 2), num_heads=(3, 6, 12, 24), strides=(4, 2, 2, 2, 2), out_indices=(0, 1, 2, 3), 
                             init_cfg=swin_transformer_init_config)
 
-    expl_img = Image.open(example_image_p_)
+    expl_img = torch.randn(3, 224, 224)
     expl_img_tensor = PIL2tensor(expl_img).unsqueeze(0)
 
     model_output = model(expl_img_tensor)

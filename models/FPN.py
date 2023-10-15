@@ -1,42 +1,17 @@
-from models.backbones.swin2D import swin_transformer
-from models.backbones.swin3D import SwinTransformer3D, swin_tiny_config
-from models.resnetFPN import conv1x1, conv3x3, _upsample, _upsample_time
+from models.backbones import swin_tiny_config
+from models.backbones.swin3D import SwinTransformer3D
+from models.resnetFPN import conv1x1, conv3x3, _upsample
 
 import torch.nn as nn
-import torch.nn.functional as F
 
-from pathlib import Path
-
-
-from PIL import Image
 import torchvision.transforms as transforms
 PIL2tensor = transforms.Compose([transforms.ToTensor()])
 tensor2PIL = transforms.Compose([transforms.ToPILImage()])
 
-backbones_DIR = Path("models") / "backbones"
-swin_small_pretrained_P_ = backbones_DIR / "pretrained_models" / "swin_small_patch4_window7_224.pth"
-example_img_P_ = backbones_DIR / "dogs_1280p_0.jpg"
-swin_transformer2d_config = dict(_delete_=True,
-            embed_dims=192,
-            depths=[2, 2, 18, 2],
-            num_heads=[3, 6, 12, 24],
-            window_size=7,
-            mlp_ratio=4,
-            qkv_bias=True,
-            qk_scale=None,
-            drop_rate=0.,
-            attn_drop_rate=0.,
-            drop_path_rate=0.3,
-            patch_norm=True,
-            out_indices=(0, 1, 2, 3),
-            with_cp=False,
-            pretrained_model_path=swin_small_pretrained_P_)
 
-
-class ViTFPN(nn.Module):
-    def __init__(self, embed_dims, depths, num_heads, window_size, 
-                 mlp_ratio, out_indices, pretrained_model_path: Path=None, **kwargs):
-        super(ViTFPN, self).__init__()
+class FPN(nn.Module):
+    def __init__(self, model_config):
+        super(FPN, self).__init__()
         # the specified pretrained_model should be compartible with the Swin Transformer size / depth
         # config = dict(type='SwinTransformer',
         #     embed_dims=embed_dims,
@@ -54,7 +29,9 @@ class ViTFPN(nn.Module):
         # self.backbone = swin_transformer(init_cfg=config)
         # self.nb_out_feature_maps = len(config["out_indices"])
         # assert self.nb_out_feature_maps > 2, "Please make sure the ViT is deep enough to produce at least 3 Feature Maps"
-        self.backbone = SwinTransformer3D(**swin_tiny_config)
+
+        print(model_config)
+        self.backbone = SwinTransformer3D(**model_config)
         
         # the nb of channels in the output feature maps depend on the size of the ViT, for now hard-coded
         self.lateral_layer1 = conv1x1(768, 256) # conv1x1(2304, 256)
@@ -104,19 +81,16 @@ class ViTFPN(nn.Module):
     def load_my_state_dict(self, state_dict):
         pass
 
-def vitfpn(args):
-    return ViTFPN(**swin_transformer2d_config)
-
 
 def main():
-    example_img = Image.open(example_img_P_.as_posix())
+    example_img = torch.randn(3, 224, 224)
 
     example_img_tensor = PIL2tensor(example_img).unsqueeze(0) # (B, C, W, H)
     import torch
     example_img_tensor = torch.randn((3, 3, 180, 320))
     img_expanded_to_vid = example_img_tensor.unsqueeze(2).repeat(1, 1, 8, 1, 1) # (B, C, T=8, W, H) 
     print(img_expanded_to_vid.shape)
-    model = ViTFPN(**swin_transformer2d_config)
+    model = FPN(**swin_tiny_config)
     features, ego_feat = model(img_expanded_to_vid)
     for i, feature in enumerate(features):
         print(f"feature[{i}]:", feature.shape)

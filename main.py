@@ -24,10 +24,8 @@ def main():
     parser.add_argument('--ANNO_ROOT', default='', help='Location to directory where annotations are stored') # /mnt/mars-fast/datasets/
     parser.add_argument('--MODE', default='train',
                         help='MODE can be train, gen_dets, eval_frames, eval_tubes define SUBSETS accordingly, build tubes')
-    parser.add_argument('--BACKBONE_TYPE', default="vit", 
-                        type=str, help="type of the model's backbone [cnn, vit]")
     # Name of backbone network, e.g. resnet18, resnet34, resnet50, resnet101 resnet152 are supported
-    parser.add_argument('--ARCH', default='resnet50', 
+    parser.add_argument('--ARCH', default='swinT', 
                         type=str, help=' base arch')
     parser.add_argument('--MODEL_TYPE', default='I3D',
                         type=str, help=' base model')
@@ -174,6 +172,9 @@ def main():
 
     ## Parse arguments
     args = parser.parse_args()
+
+    if not args.ARCH.startswith("resnet"):
+        args.MODEL_TYPE = "NONE"
 
     args = utils.set_args(args) # set directories and SUBSETS fo datasets
     args.MULTI_GPUS = False if args.BATCH_SIZE == 1 else args.MULTI_GPUS

@@ -607,8 +607,8 @@ class VideoDataset(tutils.data.Dataset):
         self.numf_list = []
         frame_level_list = []
 
-        #for videoname in sorted(database.keys()):
-        for videoname in sorted(subset_vid_names_to_process):
+        for videoname in sorted(database.keys()):
+        #for videoname in sorted(subset_vid_names_to_process):
             if not is_part_of_subsets(final_annots['db'][videoname]['split_ids'], self.SUBSETS):
                 continue
             
@@ -679,7 +679,7 @@ class VideoDataset(tutils.data.Dataset):
             frame_level_list.append(frame_level_annos)  
 
             ## make ids
-            start_frames = [ f for f in range(numf-self.MIN_SEQ_STEP*self.SEQ_LEN, -1,  -self.skip_step)]
+            start_frames = [ f for f in range(numf-self.MIN_SEQ_STEP*self.SEQ_LEN, 0,  -self.skip_step)]
             if self.full_test and 0 not in start_frames:
                 start_frames.append(0)
             logger.info('number of start frames: '+ str(len(start_frames)))
@@ -708,6 +708,7 @@ class VideoDataset(tutils.data.Dataset):
         self.childs = {'duplex_childs':final_annots['duplex_childs'], 'triplet_childs':final_annots['triplet_childs']}
         self.num_videos = len(self.video_list)
         self.print_str = ptrstr
+        logger.info(self.ids)
         
     def __len__(self):
         return len(self.ids)
