@@ -1,5 +1,5 @@
 from models.backbones import swin_tiny_config
-from models.backbones.swin3D import SwinTransformer3D
+
 from models.resnetFPN import conv1x1, conv3x3, _upsample
 
 import torch.nn as nn
@@ -10,30 +10,11 @@ tensor2PIL = transforms.Compose([transforms.ToPILImage()])
 
 
 class FPN(nn.Module):
-    def __init__(self, model_config):
+    def __init__(self, backbone_constructor, constructor_kwargs):
         super(FPN, self).__init__()
-        # the specified pretrained_model should be compartible with the Swin Transformer size / depth
-        # config = dict(type='SwinTransformer',
-        #     embed_dims=embed_dims,
-        #     depths=depths,
-        #     num_heads=num_heads,
-        #     window_size=window_size,
-        #     mlp_ratio=mlp_ratio,
-        #     out_indices=out_indices,
-        #     convert_weights=False if pretrained_model_path is None else True,
-        #     init_cfg=dict(
-        #         type='Pretrained',
-        #         checkpoint=pretrained_model_path
-        #         ) if not pretrained_model_path is None else None,
-        #     **kwargs)   
-        # self.backbone = swin_transformer(init_cfg=config)
-        # self.nb_out_feature_maps = len(config["out_indices"])
-        # assert self.nb_out_feature_maps > 2, "Please make sure the ViT is deep enough to produce at least 3 Feature Maps"
-
-        print(model_config)
-        self.backbone = SwinTransformer3D(**model_config)
+        self.backbone = backbone_constructor(**constructor_kwargs)
         
-        # the nb of channels in the output feature maps depend on the size of the ViT, for now hard-coded
+        # the nb of channels in the output feature maps depend on the size of the model, for now hard-coded
         self.lateral_layer1 = conv1x1(768, 256) # conv1x1(2304, 256)
         self.lateral_layer2 = conv1x1(384, 256)
         self.lateral_layer3 = conv1x1(192, 256)
@@ -80,18 +61,3 @@ class FPN(nn.Module):
 
     def load_my_state_dict(self, state_dict):
         pass
-
-
-def main():
-    example_img = torch.randn(3, 224, 224)
-
-    example_img_tensor = PIL2tensor(example_img).unsqueeze(0) # (B, C, W, H)
-    import torch
-    example_img_tensor = torch.randn((3, 3, 180, 320))
-    img_expanded_to_vid = example_img_tensor.unsqueeze(2).repeat(1, 1, 8, 1, 1) # (B, C, T=8, W, H) 
-    print(img_expanded_to_vid.shape)
-    model = FPN(**swin_tiny_config)
-    features, ego_feat = model(img_expanded_to_vid)
-    for i, feature in enumerate(features):
-        print(f"feature[{i}]:", feature.shape)
-    print("ego_feat:", ego_feat.shape)

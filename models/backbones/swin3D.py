@@ -667,7 +667,7 @@ class SwinTransformer3D(nn.Module):
         super(SwinTransformer3D, self).train(mode)
         self._freeze_stages()
 
-from models.backbones import swin_small_config
+from __init__ import swin_small_config
 def main():
     model = SwinTransformer3D(**swin_small_config)
     model.init_weights()
@@ -675,3 +675,6 @@ def main():
     outs = model(exp)
     for out in outs:
         print(out.shape)
+
+if __name__ == "__main__":
+    main()

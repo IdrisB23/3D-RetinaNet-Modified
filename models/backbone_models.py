@@ -1,8 +1,18 @@
+import torch
+
+from modules.utils import get_logger
+
 from models.FPN import FPN
 from models.resnetFPN import resnetfpn
+
 from models.backbones import swin_tiny_config, swin_small_config
-import torch
-from modules.utils import get_logger
+from models.backbones.swin3D import SwinTransformer3D
+
+from mmpretrain.models.backbones import ConvNeXtI3D
+from models.backbones import convnext_tiny_constructor_kwargs
+from models.backbones import convnext_small_constructor_kwargs
+from models.backbones import convnext_base_constructor_kwargs
+
 
 logger = get_logger(__name__)
 
@@ -10,12 +20,17 @@ def backbone_models(args):
     base_arch, MODEL_TYPE = args.ARCH, args.MODEL_TYPE
     print(base_arch)
 
-    assert base_arch.startswith("resnet") or base_arch.startswith("swin") or base_arch.startswith("convnext")
+    assert base_arch.startswith("resnet") or base_arch.startswith("swin") or base_arch.startswith("internimage")
 
     modelperms = {'resnet50': [3, 4, 6, 3], 'resnet101': [3, 4, 23, 3], "swint": [2, 2, 6, 2], "swins": [2, 2, 18, 2]}
-    model_configs = {"swint": swin_tiny_config, "swins": swin_small_config}
     model_3d_layers = {'resnet50': [[0, 1, 2], [0, 2], [0, 2, 4], [0, 1]], 
                        'resnet101': [[0, 1, 2], [0, 2], [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22], [0, 1]]}
+    swin_constructor_kwargs_dict = {"swint": swin_tiny_config, "swins": swin_small_config}
+    convnext_constructor_kwargs_dict = {"convnext_t": convnext_tiny_constructor_kwargs,
+                                        "convnext_s": convnext_small_constructor_kwargs,
+                                        "convnext_b": convnext_base_constructor_kwargs,
+                                        }
+
     assert base_arch in modelperms, 'Arch shoudl from::>' + \
         ','.join([m for m in modelperms])
 
@@ -24,15 +39,18 @@ def backbone_models(args):
     else:
         args.non_local_inds = [[], [], [], []]
 
-
     if base_arch.lower().startswith("resnet"):
         args.model_perms = modelperms[base_arch]
         args.model_3d_layers = model_3d_layers[base_arch]
         model = resnetfpn(args)
     elif base_arch.lower().lower().startswith("swin"):
-        config = model_configs[base_arch.lower()]
-        logger.info(config)
-        model = FPN(config)
+        swin_kwargs = swin_constructor_kwargs_dict[base_arch.lower()]
+        logger.info(swin_kwargs)
+        model = FPN(SwinTransformer3D, swin_kwargs)
+    elif base_arch.lower().startswith("convnext"):
+        convnext_kwargs = convnext_constructor_kwargs_dict[base_arch.lower()]
+        logger.info(convnext_kwargs)
+        model = FPN(ConvNeXtI3D, convnext_kwargs)
     else:
         raise RuntimeError("Define the argument --ARCH correclty:: " + args.ARCH)
 
