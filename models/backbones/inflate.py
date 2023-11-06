@@ -4,12 +4,13 @@ import torch
 import torch.nn as nn
 
 from mmpretrain.models.utils import LayerNorm3d, LayerNorm2d
-from mmpretrain.models.backbones import ConvNeXtBlock, ConvNeXtI3DBlock
+from mmpretrain.models.backbones import ConvNeXtBlock, ConvNeXtI3DBlock # changed source code
+from collections import defaultdict
 
 
 def inflate_conv(conv2d,
-                 time_dim=3,
-                 time_padding=0,
+                 time_dim=4,
+                 time_padding=1,
                  time_stride=1,
                  time_dilation=1,
                  center=False):
@@ -45,15 +46,22 @@ def inflate_conv(conv2d,
     return conv3d
 
 
-def inflate_linear(linear2d, time_dim):
+def inflate_linear(linear2d, time_dim, dont_aggregate_time=True):
     """
     Args:
         time_dim: final time dimension of the features
     """
-    linear3d = nn.Linear(linear2d.in_features * time_dim,
-                               linear2d.out_features)
-    weight3d = linear2d.weight.data.repeat(1, time_dim)
-    weight3d = weight3d / time_dim
+    out_features_3d = linear2d.out_features
+    if dont_aggregate_time:
+        in_features_3d = linear2d.in_features
+    else:
+        in_features_3d = linear2d.in_features * time_dim
+    linear3d = nn.Linear(in_features_3d, out_features_3d)
+    if dont_aggregate_time:
+        weight3d = linear2d.weight.data
+    else:
+        weight3d = linear2d.weight.data.repeat(1, time_dim)
+        weight3d = weight3d / time_dim
 
     linear3d.weight = nn.Parameter(weight3d)
     linear3d.bias = linear2d.bias
@@ -110,7 +118,7 @@ def inflate_pool(pool2d,
 
 
 def inflate_convnext_block(convnext_block: ConvNeXtBlock) -> ConvNeXtI3DBlock:
-    pass
+    raise NotImplementedError("inflate_convnext_block not implemented, yet")
 
 
 def pretty_print_module_tree(module_tree: dict):
@@ -120,7 +128,6 @@ def pretty_print_module_tree(module_tree: dict):
             print(descendent["mod_name"])
             pretty_print_module_tree(descendent)
 
-from collections import defaultdict
 
 def inflate_all_model_submodules(model: nn.Module):
     print(f"Inflating model from 2D to 3D:")
