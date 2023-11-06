@@ -12,6 +12,13 @@ from operator import mul
 from einops import rearrange
 
 
+from pathlib import Path
+import sys
+sys.path.insert(1, str(Path(__file__).parent.parent.parent.parent))
+
+from models.backbones import swin_tiny_config
+
+
 class Mlp(nn.Module):
     """ Multilayer perceptron."""
 
@@ -667,9 +674,9 @@ class SwinTransformer3D(nn.Module):
         super(SwinTransformer3D, self).train(mode)
         self._freeze_stages()
 
-from __init__ import swin_small_config
+
 def main():
-    model = SwinTransformer3D(**swin_small_config)
+    model = SwinTransformer3D(**swin_tiny_config)
     model.init_weights()
     exp = torch.randn((5, 3, 4, 224, 224))
     outs = model(exp)

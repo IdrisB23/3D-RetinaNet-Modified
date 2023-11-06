@@ -1,13 +1,18 @@
 import torch
 import torch.nn as nn
-import inflate
+
 from pathlib import Path
 import sys
-sys.path.insert(1, str(Path(__file__).parent.parent.parent))
-sys.path.insert(1, str(Path(__file__).parent.parent.parent / "mmpretrain"))
+sys.path.insert(1, str(Path(__file__).parent.parent.parent.parent))
+sys.path.insert(1, str(Path(__file__).parent.parent.parent.parent / "mmpretrain"))
+sys.path.insert(1, str(Path(__file__).parent.parent.parent.parent / "mmpretrain_custom"))
+
+import models.backbones.inflate_2D_weights as inflate
 from models.backbones import convnext_tiny_constructor_kwargs
+
 import mmpretrain
-from mmpretrain.models.backbones import ConvNeXt, ConvNeXtI3D #package installed from source (modified)
+from mmpretrain.models.backbones import ConvNeXt
+from mmpretrain_custom.models.backbones.convnext import ConvNeXtI3D # changed source code
 
 
 def calc_kernel_size_padding_to_preserve_output_time_dim(time_dim: int) -> dict:
@@ -81,6 +86,7 @@ def return_model_with_inflated_weights(convnext_model_2d: nn.Module, dummy_convn
         else:
             print(f"Module is neither of name 'downsample' nor 'stages', but rather {module_name}")
     return new_model
+
 
 def main():
     # doesn't work with ConvNextI3D, undeterministic init of weights

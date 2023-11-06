@@ -1,10 +1,18 @@
 # https://github.com/hassony2/inflated_convnets_pytorch
 # modified from ::=> credit: https://github.com/hassony2/inflated_convnets_pytorch/blob/master/src/inflate.py
+from pathlib import Path
+import sys
+sys.path.insert(1, str(Path(__file__).parent.parent.parent.parent))
+sys.path.insert(1, str(Path(__file__).parent.parent.parent.parent / "mmpretrain"))
+sys.path.insert(1, str(Path(__file__).parent.parent.parent.parent / "mmpretrain_custom"))
+
 import torch
 import torch.nn as nn
 
-from mmpretrain.models.utils import LayerNorm3d, LayerNorm2d
-from mmpretrain.models.backbones import ConvNeXtBlock, ConvNeXtI3DBlock # changed source code
+from mmpretrain.models.utils import LayerNorm2d
+from mmpretrain_custom.models.utils.norm import LayerNorm3d # changed source code
+from mmpretrain.models.backbones import ConvNeXtBlock
+from mmpretrain_custom.models.backbones.convnext import ConvNeXtI3DBlock # changed source code
 from collections import defaultdict
 
 
