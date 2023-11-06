@@ -1,6 +1,6 @@
 from pathlib import Path
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+sys.path.insert(1, str(Path(__file__).parent.parent.parent))
 
 import torch.nn as nn
 
@@ -24,8 +24,9 @@ swin_large_config = {"depths": [2, 2, 18, 2], "embed_dim": 192}
 convnext_tiny_constructor_kwargs = dict(
     arch= "tiny",
     out_indices=[-4, -3, -2, -1], # last 4 FMs
+    gap_before_final_norm=False,
     init_cfg= dict(
-       type= "PreTrained",
+       type= "Pretrained",
        checkpoint= convnext_tiny_in1k_ema_weights_P_.as_posix(),
        prefix= "backbone."
     )

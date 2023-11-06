@@ -28,3 +28,9 @@ datasets
 model_checkpts
 pre-trained/*
 *.png
+*.jpg
+*.mp4
+*.pt
+
+# files downloaded from paperspace
+files_from_paperspace
