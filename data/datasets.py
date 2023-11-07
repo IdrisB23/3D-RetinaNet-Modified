@@ -1,7 +1,7 @@
 subset_vid_names_to_process = [
-    "2014-06-25-16-45-34_stereo_centre_02", 
-    "2014-06-26-09-53-12_stereo_centre_02",
-    "2014-07-14-14-49-50_stereo_centre_01",
+    "2014-11-14-16-34-33_stereo_centre_06", 
+    "2014-11-18-13-20-12_stereo_centre_05",
+    "2014-11-21-16-07-03_stereo_centre_01",
     ]
 
 """
@@ -708,7 +708,6 @@ class VideoDataset(tutils.data.Dataset):
         self.childs = {'duplex_childs':final_annots['duplex_childs'], 'triplet_childs':final_annots['triplet_childs']}
         self.num_videos = len(self.video_list)
         self.print_str = ptrstr
-        logger.info(self.ids)
         
     def __len__(self):
         return len(self.ids)

@@ -26,8 +26,14 @@ class FPN(nn.Module):
         self.avg_pool = nn.AdaptiveAvgPool3d((None, 1, 1))
 
 
-    def init_weights(self):
-        self.backbone.init_weights()
+    def init_weights(self, init_hook=None, hook_kwargs=None):
+        if init_hook is None:
+            self.backbone.init_weights()
+        else:
+            if hook_kwargs is None:
+                init_hook(self)
+            else:
+                init_hook(self, hook_kwargs)
 
 
     def forward(self, x):
