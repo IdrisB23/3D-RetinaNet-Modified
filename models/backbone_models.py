@@ -65,14 +65,14 @@ def backbone_models(args):
     elif base_arch.lower().lower().startswith("swin"):
         swin_kwargs = swin_constructor_kwargs_dict[base_arch.lower()]
         logger.info(swin_kwargs)
-        model = FPN(SwinTransformer3D, swin_kwargs)
+        model = FPN(SwinTransformer3D, swin_kwargs, base_arch)
     elif base_arch.lower().startswith("convnext"):
         convnext_kwargs = convnext_constructor_kwargs_dict[base_arch.lower()]
         logger.info(convnext_kwargs)
         if args.MODE == 'train':
-            model = FPN(ConvNeXt, convnext_kwargs) # will be inflated later
+            model = FPN(ConvNeXt, convnext_kwargs, base_arch) # will be inflated later
         else:
-            model = FPN(ConvNeXtI3D, convnext_kwargs)
+            model = FPN(ConvNeXtI3D, convnext_kwargs, base_arch)
     else:
         raise RuntimeError("Define the argument --ARCH correclty:: " + args.ARCH)
 

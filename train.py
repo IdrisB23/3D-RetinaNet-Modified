@@ -64,7 +64,17 @@ def train(args, net, train_dataset, val_dataset):
     val_data_loader = data_utils.DataLoader(val_dataset, args.BATCH_SIZE, num_workers=args.NUM_WORKERS,
                                             shuffle=False, pin_memory=True, collate_fn=custum_collate)
     
-    
+    if args.TENSORBOARD:
+        images, gt_boxes, gt_labels, ego_labels, counts, img_indexes = next(iter(train_data_loader))[:-1]
+        # convert input to cuda
+        images = images.cuda(0, non_blocking=True)
+        gt_boxes = gt_boxes.cuda(0, non_blocking=True)
+        gt_labels = gt_labels.cuda(0, non_blocking=True)
+        ego_labels = ego_labels.cuda(0, non_blocking=True)
+        counts = counts.cuda(0, non_blocking=True)
+        img_indexes = torch.IntTensor(img_indexes) # used to be list[int]
+        args.sw.add_graph(net, (images, gt_boxes, gt_labels, ego_labels, counts, img_indexes))
+
     iteration = 0
     for epoch in range(args.START_EPOCH, args.MAX_EPOCHS + 1):
         net.train()
@@ -81,6 +91,9 @@ def train(args, net, train_dataset, val_dataset):
             run_val(args, val_data_loader, val_dataset, net, epoch, iteration)
 
         scheduler.step()
+    if args.TENSORBOARD:
+        args.sw.close()
+
 
 def run_train(args, train_data_loader, net, optimizer, epoch, iteration):
 
@@ -97,8 +110,8 @@ def run_train(args, train_data_loader, net, optimizer, epoch, iteration):
         images = images.cuda(0, non_blocking=True)
         gt_boxes = gt_boxes.cuda(0, non_blocking=True)
         gt_labels = gt_labels.cuda(0, non_blocking=True)
-        counts = counts.cuda(0, non_blocking=True)
         ego_labels = ego_labels.cuda(0, non_blocking=True)
+        counts = counts.cuda(0, non_blocking=True)
         # forward
         torch.cuda.synchronize()
         data_time.update(time.perf_counter() - start)
