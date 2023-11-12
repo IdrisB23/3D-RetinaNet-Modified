@@ -16,10 +16,11 @@ from models.backbones.swin_transformer.swin3D import SwinTransformer3D
 
 from mmpretrain.models.backbones import ConvNeXt
 from mmpretrain_custom.models.backbones.convnext import ConvNeXtI3D
-from models.backbones.convnext.convnext import return_model_with_inflated_weights
+
 from models.backbones import convnext_tiny_constructor_kwargs
 from models.backbones import convnext_small_constructor_kwargs
 from models.backbones import convnext_base_constructor_kwargs
+from models.backbones import inflate_convnext_and_init_weights_func
 
 
 logger = get_logger(__name__)
@@ -69,7 +70,6 @@ def backbone_models(args):
         convnext_kwargs = convnext_constructor_kwargs_dict[base_arch.lower()]
         logger.info(convnext_kwargs)
         if args.MODE == 'train':
-            logger.info("init with ConvNeXt!!!")
             model = FPN(ConvNeXt, convnext_kwargs) # will be inflated later
         else:
             model = FPN(ConvNeXtI3D, convnext_kwargs)
@@ -77,25 +77,12 @@ def backbone_models(args):
         raise RuntimeError("Define the argument --ARCH correclty:: " + args.ARCH)
 
     if args.MODE == 'train':
-        logger.info("training!!!")
         if not base_arch.lower().startswith("resnet"):
             if base_arch.lower().startswith("convnext"):
-                def init_weights_func(ref_to_FPN, kwargs):
-                    dummy_inflated_convnext = ConvNeXtI3D(**convnext_kwargs)
-                    FPN_convnext_2D_backbone = ref_to_FPN.backbone
-                    logger = kwargs["logger"]
-                    logger.info("FPN_convnext_2D_backbone.__class__", FPN_convnext_2D_backbone.__class__)
-                    # first init weights for 2D model
-                    FPN_convnext_2D_backbone.init_weights()
-                    # inflate the models and change 2D parameters/layers to their appropriate 3D counterparts
-                    inflated_backbone = return_model_with_inflated_weights(
-                        FPN_convnext_2D_backbone, 
-                        dummy_inflated_convnext, 
-                        time_dim=args.SEQ_LEN
-                        )
-                    ref_to_FPN.backbone = inflated_backbone
-                model.init_weights(init_weights_func, dict(logger=logger))
-            model.init_weights()
+                model.init_weights(inflate_convnext_and_init_weights_func, 
+                                   dict(args=args, logger=logger, convnext_kwargs=convnext_kwargs))
+            else:
+                model.init_weights()
         else:
             if MODEL_TYPE.startswith('RCN'):
                 model.identity_state_dict()
